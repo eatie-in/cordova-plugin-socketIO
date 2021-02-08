@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-socketIO" version="2.0.4-dev">
+    <name>SocketIO</name>
+    <description>Cordova SoceketIO Plugin</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,SocketIO</keywords>
+    <!-- <repo>https://git-wip-us.apache.org/repos/asf/cordova-plugin-device.git</repo>
+    <issue>https://issues.apache.org/jira/browse/CB/component/12320648</issue> -->
+
+    <js-module src="www/socketIO.js" name="socketIO">
+        <clobbers target="cordova.plugins.socketIO" />
+    </js-module>
+
+    <!-- android -->
+    <platform name="android">
+
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+            <uses-permission android:name="android.permission.INTERNET" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="com.vishnu.socketio.ForegroundService" android:stopWithTask="false">
+            </service>
+            <activity android:name="com.vishnu.socketio.AlertActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation|screenSize|smallestScreenSize|layoutDirection" android:label="@string/app_name" android:launchMode="singleTask" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" android:exported="false">
+            </activity>
+        </config-file>
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="SocketIO">
+                <param name="android-package" value="com.vishnu.socketio.SocketIO"/>
+            </feature>
+        </config-file>
+        <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
+        <source-file src="src/android/SocketIO.java" target-dir="src/com/vishnu/socketio/" />
+        <source-file src="src/android/ForegroundService.java" target-dir="src/com/vishnu/socketio/" />
+        <source-file src="src/android/MessageEvent.java" target-dir="src/com/vishnu/socketio/" />
+        <source-file src="src/android/SocketIOService.java" target-dir="src/com/vishnu/socketio/" />
+        <source-file src="src/android/AlertActivity.java" target-dir="src/com/vishnu/socketio" />
+        <source-file src="src/android/layout/activity_alert.xml" target-dir="res/layout"/>
+
+    </platform>
+
+</plugin>
