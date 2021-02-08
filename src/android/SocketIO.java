@@ -1,201 +1,139 @@
-/*
-       Licensed to the Apache Software Foundation (ASF) under one
-       or more contributor license agreements.  See the NOTICE file
-       distributed with this work for additional information
-       regarding copyright ownership.  The ASF licenses this file
-       to you under the Apache License, Version 2.0 (the
-       "License"); you may not use this file except in compliance
-       with the License.  You may obtain a copy of the License at
-
-         http://www.apache.org/licenses/LICENSE-2.0
-
-       Unless required by applicable law or agreed to in writing,
-       software distributed under the License is distributed on an
-       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-       KIND, either express or implied.  See the License for the
-       specific language governing permissions and limitations
-       under the License.
-*/
 package com.vishnu.socketio;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
+import android.util.Log;
 
-import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.LOG;
-import org.apache.cordova.PluginResult;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.apache.cordova.CordovaWebView;
-
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.provider.Settings;
-import android.util.Log;
-
-import androidx.core.content.ContextCompat;
-
-import com.squareup.otto.Bus;
-import com.squareup.otto.Subscribe;
-import com.squareup.otto.ThreadEnforcer;
+import java.net.URI;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
-public class SocketIO extends CordovaPlugin {
 
-    protected static final String TAG = "SocketIoPlugin";
-    protected static Context applicationContext = null;
-    private static Activity cordovaActivity = null;
-    protected static SocketIO instance = null;
-    private boolean isForeground;
+class SocketIO {
+    private static String TAG = "SOCKET_IO_SERVICE";
+    private String name;
+    private String url;
+    private String query;
+    private Socket socket;
 
-
-    private static Map<String, SocketIOService> connections = new HashMap<String, SocketIOService>();
-
-    protected static CallbackContext mcallbackContext;
-
-    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-        super.initialize(cordova, webView);
-
+    SocketIO(String name, String url, String query) {
+        this.name = name;
+        this.url = url;
+        this.query = query;
+        this.connect();
     }
 
-    @Override
-    protected void pluginInitialize() {
-        instance = this;
-        cordovaActivity = this.cordova.getActivity();
-        applicationContext = cordovaActivity.getApplicationContext();
-        Log.i(TAG, "pluginInitialize:");
-        super.pluginInitialize();
+    public String getName() {
+        return name;
     }
 
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        mcallbackContext = callbackContext;
-        if (action.equals("connect")) {
-            this.connect(args);
-        } else if (action.equals("listen")) {
-            this.listen(args);
-        }
-        return true;
+    private IO.Options getOptions(String query) {
+        IO.Options options = new IO.Options();
+        options.query = query;
+        options.forceNew = true;
+        options.reconnection = true;
+        return options;
     }
 
-    @Subscribe
-    private void onMessage() {
-
+    public void connect() {
+        IO.Options options = this.getOptions(query);
+        URI uri = URI.create(url);
+        socket = IO.socket(uri, options);
+        socket.connect();
+        this.registerDefaultListeners();
     }
 
-    private void connect(JSONArray args) throws JSONException {
-        JSONObject options = args.getJSONObject(0);
-        String name = options.getString("name");
-        String url = options.getString("url");
-        String query = options.getString("query");
-        cordova.getThreadPool().execute(new Runnable() {
+    private void registerDefaultListeners() {
+        this.onConnect();
+        this.onError();
+        this.onDisconnect();
+    }
+
+    public void disconnect() {
+        if (socket != null)
+            socket.disconnect();
+    }
+
+
+    private JSONObject parseData(Object arg, String event) throws JSONException {
+        JSONObject payload = new JSONObject();
+        payload.put("socket", name);
+        payload.put("event", event);
+        payload.put("data", arg);
+        return payload;
+    }
+
+    public void addListener(String event, Boolean showAlert) {
+        socket.on(event, new Emitter.Listener() {
             @Override
-            public void run() {
-                SocketIOService connection = connections.get(name);
-                if (connection != null) {
-                    mcallbackContext.success("already connected");
-                } else {
-                    SocketIOService socketIOService = new SocketIOService(name, url, query);
-                    connections.put(name, socketIOService);
-                    if (!isForeground) {
-                        Intent intent = new Intent(cordova.getContext(), ForegroundService.class);
-                        ContextCompat.startForegroundService(cordova.getContext(), intent);
-                    }
-                    isForeground = true;
-                    mcallbackContext.success("connected");
+            public void call(Object... args) {
+                try {
+                    JSONObject payload = parseData(args[0], event);
+                    SocketIOService.sendMessage(payload, showAlert);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    SocketIOService.sendMessage(e.getMessage(), showAlert);
                 }
             }
         });
     }
 
-    private void listen(JSONArray args) throws JSONException {
-        JSONObject options = args.getJSONObject(0);
-        String socketName = options.getString("name");
-        String eventName = options.getString("event");
-        Boolean showAlert = options.getBoolean("alert");
-        Log.i(TAG, "listen: name:" + socketName + "event:" + eventName);
-        cordova.getThreadPool().execute(new Runnable() {
+    public void removeListener() {
+
+    }
+
+    public void listen(String event, CallbackContext callbackContext, Boolean showAlert) {
+        socket.on(event, new Emitter.Listener() {
             @Override
-            public void run() {
-                SocketIOService connection = connections.get(socketName);
-                if (connection != null) {
-                    connection.listen(eventName,
-                            mcallbackContext, showAlert);
-                    PluginResult pluginResult = new PluginResult(PluginResult.Status.ERROR, "listening" + eventName);
-                    pluginResult.setKeepCallback(true);
-                    mcallbackContext.sendPluginResult(pluginResult);
-                } else {
-                    mcallbackContext.error("First Please connect");
+            public void call(Object... args) {
+                try {
+                    JSONObject payload = parseData(args[0], event);
+//                    SocketIOService.sendMessage(payload, callbackContext, showAlert);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    callbackContext.error(e.getMessage());
                 }
             }
         });
     }
 
-    private void emit(JSONArray args) throws JSONException {
-        JSONObject options = args.getJSONObject(0);
-        String socketName = options.getString("name");
-        String eventName = options.getString("event");
-        Object payload = options.getJSONObject("data");
-        Log.i(TAG, "emit: name:" + socketName + "event:" + eventName);
-        cordova.getThreadPool().execute(new Runnable() {
+    public void emit(String event, Object data) {
+        this.socket.emit(event, data);
+    }
+
+    private void onError() {
+        this.socket.on(Socket.EVENT_ERROR, new Emitter.Listener() {
             @Override
-            public void run() {
-                SocketIOService connection = connections.get(socketName);
-                if (connection != null) {
-                    Log.i(TAG, "run: " + connection.getName());
-                    connection.emit(eventName,
-                            payload);
-                    mcallbackContext.success("done");
-                } else {
-                    mcallbackContext.error("No socket found");
-                }
+            public void call(Object... args) {
+                String error = args[0].toString();
+                Log.i(TAG, error);
+                SocketIOService.updateStatus(error);
             }
         });
     }
 
-    private void disconnect(JSONArray args) throws JSONException {
-        String name = args.getString(0);
-        SocketIOService connection = connections.get(name);
-        connection.disconnect();
+    private void onConnect() {
+        this.socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                Log.i(TAG, "connected");
+                SocketIOService.updateStatus("connected");
+            }
+        });
     }
 
-    private void disconnectAll() {
-        for (Map.Entry<String, SocketIOService> entry : connections.entrySet()) {
-            SocketIOService connection = entry.getValue();
-            connection.disconnect();
-        }
-        mcallbackContext.success("disconnected");
+    private void onDisconnect() {
+        this.socket.on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                Log.i(TAG, "disconnected");
+                SocketIOService.updateStatus("Disconnected");
+            }
+        });
     }
 
-    private void test(CallbackContext callbackContext, String text) {
-        callbackContext.success(text);
-    }
-
-
-
-    @Subscribe
-    public void onMessage(MessageEvent messageEvent){
-        if(messageEvent.getShowAlert()){
-//         this.showAlert(messageEvent.getData().toString());
-//            PackageManager pm = getPackageManager();
-//            Intent notificationIntent = pm.getLaunchIntentForPackage(getApplicationContext().getPackageName());
-//            startActivity(notificationIntent);
-            mcallbackContext.success(messageEvent.toString());
-        }else {
-            Log.i(TAG, "onMessage: "+"normal");
-        }
-    }
 }
