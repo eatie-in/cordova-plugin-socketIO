@@ -17,7 +17,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import io.cordova.hellocordova.R;
 
 public class AlertActivity extends Activity {
     public static int isAlertShown = 0;
@@ -25,7 +24,6 @@ public class AlertActivity extends Activity {
     public void onCreate(Bundle state){
         super.onCreate(state);
         isAlertShown++;
-        setContentView(R.layout.activity_alert);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);

@@ -2,27 +2,46 @@ var argscheck = require("cordova/argscheck");
 var exec = require("cordova/exec");
 const PLUGIN_NAME = "SocketIOPlugin";
 
+function socketIOPlugin() { }
 
-function socketIOPlugin() {}
+socketIOPlugin.prototype.connect = (options) =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "connect", [options]);
+  });
 
-socketIOPlugin.prototype.connect = (
-  options,
-  successCallback,
-  errorCallback
-) => {
-  exec(successCallback, errorCallback, PLUGIN_NAME, "connect", [options]);
-};
+socketIOPlugin.prototype.disconnect = (socket) =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "disconnect", [socket]);
+  });
 
-socketIOPlugin.prototype.addListener = (
-  options,
-  successCallback,
-  errorCallback
-) => {
-  exec(successCallback, errorCallback, PLUGIN_NAME, "addListener", [options]);
-};
+socketIOPlugin.prototype.disconnectAll = () =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "disconnectAll", []);
+  });
 
-socketIOPlugin.prototype.onMessage = (callback) => {
-  socketIOPlugin.prototype.onMessageReceived = callback;
+socketIOPlugin.prototype.addListener = (options) =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "addListener", [options]);
+  });
+
+socketIOPlugin.prototype.removeListener = (options) =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "removeListener", [options]);
+  });
+
+socketIOPlugin.prototype.emit = (options) =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "emit", [options]);
+  });
+
+socketIOPlugin.prototype.onMessage = (successCallback,errorCallback) => {
+  // // socketIOPlugin.prototype.onMessageReceived = callback;
+  // return new Promise((resolve, reject) => {
+  //   // socketIOPlugin.prototype.onMessageReceived = resolve;
+  //   exec(resolve, reject, PLUGIN_NAME, "onMessage", []);
+  // });
+
+  exec(successCallback, errorCallback, PLUGIN_NAME, "onMessage", []);
 };
 
 socketIOPlugin.prototype.onMessageReceived = (payload) => {

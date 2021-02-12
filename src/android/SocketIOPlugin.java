@@ -49,48 +49,61 @@ public class SocketIOPlugin extends CordovaPlugin {
     public static Activity mActivity;
     public static Context mApplicationContext;
     protected static CallbackContext mCallbackContext;
-    private static CallbackContext mMessageCallbackContext;
     public static CordovaWebView mWebView;
+
+    private static CallbackContext mMessageCallbackContext;
     public static String messageReceivedCallback = "cordova.plugins.socketIO.onMessageReceived";
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         mWebView = webView;
+        mActivity = cordova.getActivity();
+        mApplicationContext = mActivity.getApplicationContext();
         super.initialize(cordova, webView);
+        Log.i(TAG, "initialize: ");
     }
 
 
     @Override
     public void onDestroy() {
+        mMessageCallbackContext = null;
         super.onDestroy();
     }
 
     @Override
     protected void pluginInitialize() {
-        instance = this;
-        mActivity = this.cordova.getActivity();
-        mApplicationContext = mActivity.getApplicationContext();
         Log.i(TAG, "pluginInitialize:");
         SocketIOService.getUndelivered();
         super.pluginInitialize();
     }
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        mCallbackContext = callbackContext;
-        if (action.equals("connect")) {
-            this.connect(args);
-        } else if (action.equals("emit")) {
-            this.emit(args);
-        } else if (action.equals("disconnect")) {
-            this.disconnect(args);
-        } else if (action.equals("disconnectAll")) {
-            this.disconnectAll();
-        } else if (action.equals("addListener")) {
-            this.addListener(args);
+        if (action.equals("onMessage")) {
+            mMessageCallbackContext = callbackContext;
+            this.onSocketMessage();
         } else {
-            callbackContext.error("invalid");
-            return false;
+            mCallbackContext = callbackContext;
+            if (action.equals("connect")) {
+                this.connect(args);
+            } else if (action.equals("emit")) {
+                this.emit(args);
+            } else if (action.equals("disconnect")) {
+                this.disconnect(args);
+            } else if (action.equals("disconnectAll")) {
+                this.disconnectAll();
+            } else if (action.equals("addListener")) {
+                this.addListener(args);
+            } else if (action.equals("removeListener")) {
+                this.removeListener(args);
+            } else {
+                callbackContext.error("invalid");
+                return false;
+            }
         }
         return true;
+    }
+
+    private void onSocketMessage() {
+        sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
     }
 
     private void connect(final JSONArray args) throws JSONException {
@@ -107,7 +120,6 @@ public class SocketIOPlugin extends CordovaPlugin {
     }
 
     private void addListener(final JSONArray args) throws JSONException {
-
         JSONObject options = args.getJSONObject(0);
         String socketName = options.getString("name");
         String eventName = options.getString("event");
@@ -120,17 +132,24 @@ public class SocketIOPlugin extends CordovaPlugin {
         });
     }
 
-    private void removeListener() {
-
+    private void removeListener(final JSONArray args) throws JSONException {
+        JSONObject options = args.getJSONObject(0);
+        String socketName = options.getString("name");
+        String eventName = options.getString("event");
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                SocketIOService.removeListener(socketName, eventName);
+            }
+        });
     }
-
 
     private void emit(JSONArray args) throws JSONException {
         JSONObject options = args.getJSONObject(0);
         String socketName = options.getString("name");
         String eventName = options.getString("event");
         Object payload = options.getJSONObject("data");
-        Log.i(TAG, "emit: name:" + socketName + "event:" + eventName);
+        Log.i(TAG, "emit: name:" + socketName + "event: " + eventName);
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
@@ -168,8 +187,27 @@ public class SocketIOPlugin extends CordovaPlugin {
     }
 
     public static void onData(Object payload) {
-        String callback = messageReceivedCallback + "(" + payload.toString() + ")";
-        executeGlobalJavascript(callback);
+        if (mMessageCallbackContext == null) {
+            Log.w(TAG, "sendConnectionStatus:null");
+        } else {
+            Log.i(TAG, "onData: sending througth callback");
+            sendPluginResultAndKeepCallback(payload.toString(), mMessageCallbackContext);
+        }
     }
 
+
+    protected static void sendPluginResultAndKeepCallback(String result, CallbackContext callbackContext) {
+        PluginResult pluginresult = new PluginResult(PluginResult.Status.OK, result);
+        sendPluginResultAndKeepCallback(pluginresult, callbackContext);
+    }
+
+    protected static void sendPluginResultAndKeepCallback(JSONObject result, CallbackContext callbackContext) {
+        PluginResult pluginresult = new PluginResult(PluginResult.Status.OK, result);
+        sendPluginResultAndKeepCallback(pluginresult, callbackContext);
+    }
+
+    protected static void sendPluginResultAndKeepCallback(PluginResult pluginresult, CallbackContext callbackContext) {
+        pluginresult.setKeepCallback(true);
+        callbackContext.sendPluginResult(pluginresult);
+    }
 }

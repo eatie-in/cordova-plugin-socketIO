@@ -33,8 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.cordova.hellocordova.R;
-
 
 public class SocketIOService extends Service {
     private static String CHANNEL_ID = "SocketIO";
@@ -42,9 +40,13 @@ public class SocketIOService extends Service {
     private boolean mRunning = false;
     private static String connectionStatus = "Connecting..";
 
+    private static String defaultSmallIconName = "notification_icon";
+    private static int defaultSmallIconResID = 0;
+
     private static ArrayList<JSONObject> mUndeliveredMessages = new ArrayList<JSONObject>();
 
-    private static Map<String, SocketIO> socketConnections = new HashMap<String, SocketIO>();
+    private static final Map<String, SocketIO> socketConnections = new HashMap<String, SocketIO>();
+    private static final Map<String, ArrayList<String>> socketListeners = new HashMap<String, ArrayList<String>>();
 
 
     @Override
@@ -54,6 +56,10 @@ public class SocketIOService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
+        if (socketConnections.size() < 1) {
+//            super.onTaskRemoved(rootIntent);
+            return;
+        }
         Log.d("NotificationService", "onTaskRemoved METHOD");
         Intent restartService = new Intent(getApplicationContext(), this.getClass());
         restartService.setPackage(getPackageName());
@@ -77,7 +83,6 @@ public class SocketIOService extends Service {
         Context context = SocketIOPlugin.mApplicationContext;
         Intent alertIntent;
         alertIntent = new Intent(context, AlertActivity.class);
-
         alertIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         alertIntent.putExtra("alertMessage", alertMessage);
         context.startActivity(alertIntent);
@@ -105,26 +110,28 @@ public class SocketIOService extends Service {
         Context context = SocketIOPlugin.mApplicationContext;
         PackageManager pm = context.getPackageManager();
         Intent notificationIntent = pm.getLaunchIntentForPackage(context.getPackageName());
-        Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
+        NotificationCompat.Builder notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle("Connection")
                 .setContentText(text)
-                .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setContentIntent(PendingIntent.getActivity(context, 0,
-                        notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT))
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .build();
-        return notification;
+                .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+
+        int defaultSmallIconResID = context.getResources().getIdentifier(defaultSmallIconName, "drawable", context.getPackageName());
+        if (defaultSmallIconResID != 0) {
+            notification.setSmallIcon(defaultSmallIconResID);
+        } else {
+            notification.setSmallIcon(context.getApplicationInfo().icon);
+        }
+        notification.setOngoing(true);
+        return notification.build();
     }
 
     public static void updateNotification(String text) {
+        if (socketConnections.size() < 1) return;
         Context context = SocketIOPlugin.mApplicationContext;
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(context);
         Notification notification = createNotification(text);
         managerCompat.notify(2, notification);
-
-//        NotificationManagerCompat managerCompat =
-//                notificationManagerCompat.notify(1, notification);
     }
 
     private static boolean isMainAppForeground() {
@@ -157,17 +164,14 @@ public class SocketIOService extends Service {
     public static void updateStatus(String status) {
         updateNotification(status);
         connectionStatus = status;
+        SocketIOPlugin.onData(status);
         Log.i(TAG, "updateStatus: " + status);
     }
 
     public static void getUndelivered() {
-        ArrayList<JSONObject> messages = new ArrayList<JSONObject>(mUndeliveredMessages.size());
         if (mUndeliveredMessages.size() >= 1) {
             for (JSONObject message : mUndeliveredMessages) {
-                messages.add(message);
-            }
-            for (JSONObject message:messages){
-                sendMessage(message,false);
+                SocketIOPlugin.onData(message);
                 mUndeliveredMessages.remove(message);
             }
         } else {
@@ -220,22 +224,33 @@ public class SocketIOService extends Service {
         context.stopService(intent);
     }
 
+    public static void addDefaultListeners(String name) {
+        ArrayList<String> defaultListeners = new ArrayList<>();
+        defaultListeners.add("connect");
+        defaultListeners.add("disconnect");
+        defaultListeners.add("error");
+        socketListeners.put(name, defaultListeners);
+    }
+
     public static void connect(String name, String url, String query) {
         CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
+        String socketName = name.toLowerCase();
         SocketIO socketConnection = socketConnections.get(name.toLowerCase());
         if (socketConnection != null) {
             String error = name + "Already connected";
-            callbackContext.error(error);
+            callbackContext.success(error);
             return;
         }
         SocketIO socketIO = new SocketIO(name, url, query);
-        socketConnections.put(name.toLowerCase(), socketIO);
-        callbackContext.success("connect");
+        socketConnections.put(socketName, socketIO);
+        addDefaultListeners(socketName);
+        callbackContext.success();
         // start service
         start();
     }
 
-    public static void addListener(String name, String event, Boolean alert) {
+
+    public static void removeListener(String name, String event) {
         CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
         SocketIO socketConnection = socketConnections.get(name.toLowerCase());
         if (socketConnection == null) {
@@ -243,44 +258,65 @@ public class SocketIOService extends Service {
             callbackContext.error(error);
             return;
         }
+        socketConnection.removeListener(event);
+        callbackContext.success();
+        //remove listener from listeners list
+        ArrayList<String> listeners = socketListeners.get(name);
+        listeners.remove(event.toLowerCase());
+        socketListeners.put(name, listeners);
+    }
+
+    public static void addToListeners(String socket, String event) {
+        ArrayList<String> listeners = socketListeners.get(socket);
+        listeners.add(event.toLowerCase());
+        socketListeners.put(socket, listeners);
+    }
+
+    public static void addListener(String name, String event, Boolean alert) {
+        CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
+        String socketName = name.toLowerCase();
+        SocketIO socketConnection = socketConnections.get(name.toLowerCase());
+        if (socketConnection == null) {
+            String error = name + "Socket not found";
+            callbackContext.error(error);
+            return;
+        }
+        //adding to listeners
+        addToListeners(socketName, event);
+        // socket.io listener
         socketConnection.addListener(event, alert);
         String message = event + "listener added";
         callbackContext.success(message);
     }
 
-    public static void listen(String name, String event, CallbackContext callbackContext, Boolean showAlert) {
+
+    public static void emit(String name, String event, Object data) {
         SocketIO socketConnection = socketConnections.get(name.toLowerCase());
+        CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
         if (socketConnection == null) {
             String error = name + "Socket not found";
             callbackContext.error(error);
             return;
         }
-        socketConnection.listen(event,
-                callbackContext, showAlert);
-        callbackContext.success("listeners added");
-    }
-
-    public static void emit(String name, String event, Object data) {
-        SocketIO socketConnection = socketConnections.get(name.toLowerCase());
-        if (socketConnection == null) {
-            String error = name + "Socket not found";
-//            SocketIOPlugin.mCallbackContext.error(error);
-            return;
-        }
-        socketConnection.emit(event,
-                data);
-//        SocketIOPlugin.mCallbackContext.success(event + "is sent");
+        socketConnection.emit(event, data);
+        callbackContext.success();
     }
 
     public static void disconnect(String socket) {
+        CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
         SocketIO connection = socketConnections.get(socket);
+        if (connection == null) {
+            Log.w(TAG, "disconnect: Already disconnected");
+            callbackContext.success();
+            return;
+        }
         connection.disconnect();
         socketConnections.remove(socket);
-        if (socketConnections.size() > 1) {
+        callbackContext.success();
+        if (socketConnections.size() < 1) {
             stop();
             Log.i(TAG, "disconnect: stopping service");
         }
-//        SocketIOPlugin.mCallbackContext.success("disconnected");
     }
 
     public static void disconnectAll() {

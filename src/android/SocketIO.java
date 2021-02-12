@@ -72,6 +72,7 @@ class SocketIO {
             @Override
             public void call(Object... args) {
                 try {
+                    Log.i(TAG, "call: "+ args[0].toString());
                     JSONObject payload = parseData(args[0], event);
                     SocketIOService.sendMessage(payload, showAlert);
                 } catch (JSONException e) {
@@ -82,23 +83,8 @@ class SocketIO {
         });
     }
 
-    public void removeListener() {
-
-    }
-
-    public void listen(String event, CallbackContext callbackContext, Boolean showAlert) {
-        socket.on(event, new Emitter.Listener() {
-            @Override
-            public void call(Object... args) {
-                try {
-                    JSONObject payload = parseData(args[0], event);
-//                    SocketIOService.sendMessage(payload, callbackContext, showAlert);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                    callbackContext.error(e.getMessage());
-                }
-            }
-        });
+    public void removeListener(String event) {
+        socket.off(event);
     }
 
     public void emit(String event, Object data) {
