@@ -106,7 +106,6 @@ class SocketIO {
         this.socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                Log.i(TAG, "connected");
                 SocketIOService.updateStatus("connected");
             }
         });
@@ -116,7 +115,6 @@ class SocketIO {
         this.socket.on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                Log.i(TAG, "disconnected");
                 SocketIOService.updateStatus("Disconnected");
             }
         });

@@ -18,18 +18,8 @@
 */
 package com.vishnu.socketio;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
-
-import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,40 +29,31 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 
+import android.provider.Settings;
 import android.util.Log;
 
 
 public class SocketIOPlugin extends CordovaPlugin {
 
     protected static final String TAG = "SocketIoPlugin";
-    protected static SocketIOPlugin instance = null;
     public static Activity mActivity;
     public static Context mApplicationContext;
     protected static CallbackContext mCallbackContext;
-    public static CordovaWebView mWebView;
-
     private static CallbackContext mMessageCallbackContext;
-    public static String messageReceivedCallback = "cordova.plugins.socketIO.onMessageReceived";
-
-    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-        mWebView = webView;
-        mActivity = cordova.getActivity();
-        mApplicationContext = mActivity.getApplicationContext();
-        super.initialize(cordova, webView);
-        Log.i(TAG, "initialize: ");
-    }
 
 
     @Override
     public void onDestroy() {
         mMessageCallbackContext = null;
+        mCallbackContext = null;
         super.onDestroy();
     }
 
     @Override
     protected void pluginInitialize() {
         Log.i(TAG, "pluginInitialize:");
-        SocketIOService.getUndelivered();
+        mActivity = cordova.getActivity();
+        mApplicationContext = mActivity.getApplicationContext();
         super.pluginInitialize();
     }
 
@@ -103,6 +84,7 @@ public class SocketIOPlugin extends CordovaPlugin {
     }
 
     private void onSocketMessage() {
+        SocketIOService.getUndelivered();
         sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
     }
 
@@ -177,24 +159,23 @@ public class SocketIOPlugin extends CordovaPlugin {
         });
     }
 
-    private static void executeGlobalJavascript(final String jsString) {
-        mActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mWebView.loadUrl("javascript:" + jsString);
-            }
-        });
-    }
-
     public static void onData(Object payload) {
         if (mMessageCallbackContext == null) {
-            Log.w(TAG, "sendConnectionStatus:null");
+            Log.w(TAG, "no callbackContext");
         } else {
-            Log.i(TAG, "onData: sending througth callback");
+            Log.i(TAG, "onData: sending data");
             sendPluginResultAndKeepCallback(payload.toString(), mMessageCallbackContext);
         }
     }
 
+    public static void onData(JSONObject payload) {
+        if (mMessageCallbackContext == null) {
+            Log.w(TAG, "no callbackContext");
+        } else {
+            Log.i(TAG, "onData: sending data");
+            sendPluginResultAndKeepCallback(payload, mMessageCallbackContext);
+        }
+    }
 
     protected static void sendPluginResultAndKeepCallback(String result, CallbackContext callbackContext) {
         PluginResult pluginresult = new PluginResult(PluginResult.Status.OK, result);

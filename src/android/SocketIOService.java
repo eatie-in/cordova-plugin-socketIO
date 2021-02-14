@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -57,7 +58,6 @@ public class SocketIOService extends Service {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         if (socketConnections.size() < 1) {
-//            super.onTaskRemoved(rootIntent);
             return;
         }
         Log.d("NotificationService", "onTaskRemoved METHOD");
@@ -115,7 +115,6 @@ public class SocketIOService extends Service {
                 .setContentText(text)
                 .setOnlyAlertOnce(true)
                 .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT));
-
         int defaultSmallIconResID = context.getResources().getIdentifier(defaultSmallIconName, "drawable", context.getPackageName());
         if (defaultSmallIconResID != 0) {
             notification.setSmallIcon(defaultSmallIconResID);
@@ -165,7 +164,7 @@ public class SocketIOService extends Service {
         updateNotification(status);
         connectionStatus = status;
         SocketIOPlugin.onData(status);
-        Log.i(TAG, "updateStatus: " + status);
+//        Log.i(TAG, "updateStatus: " + status);
     }
 
     public static void getUndelivered() {
@@ -183,6 +182,7 @@ public class SocketIOService extends Service {
     public static void sendMessage(JSONObject message, Boolean showAlert) {
         if (!isMainAppForeground()) {
             mUndeliveredMessages.add(message);
+            Log.i(TAG, "sendMessage: " + "saved to undelivered");
             if (showAlert) {
                 showAlert("Test");
             }
@@ -200,7 +200,6 @@ public class SocketIOService extends Service {
         } else {
             SocketIOPlugin.onData(message);
         }
-
     }
 
     private static void start() {
