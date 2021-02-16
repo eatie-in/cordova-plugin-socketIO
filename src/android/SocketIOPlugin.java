@@ -26,27 +26,48 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
+import static android.app.Activity.RESULT_OK;
+
 
 public class SocketIOPlugin extends CordovaPlugin {
-
+    public static final String READ = Manifest.permission.SYSTEM_ALERT_WINDOW;
+    public static final int SEARCH_REQ_CODE = 0;
     protected static final String TAG = "SocketIoPlugin";
     public static Activity mActivity;
     public static Context mApplicationContext;
     protected static CallbackContext mCallbackContext;
     private static CallbackContext mMessageCallbackContext;
-
+    private static final int OVERLAY_REQUEST_CODE = 5;
 
     @Override
     public void onDestroy() {
         mMessageCallbackContext = null;
         mCallbackContext = null;
         super.onDestroy();
+    }
+//
+//    @Override
+//    public Bundle onSaveInstanceState() {
+//        return super.onSaveInstanceState();
+//    }
+
+
+    @Override
+    public void onReset() {
+        mMessageCallbackContext = null;
+        mCallbackContext = null;
+        super.onReset();
     }
 
     @Override
@@ -65,6 +86,10 @@ public class SocketIOPlugin extends CordovaPlugin {
             mCallbackContext = callbackContext;
             if (action.equals("connect")) {
                 this.connect(args);
+            } else if (action.equals("hasOverlayPermission")) {
+                this.hasOverlayPermission();
+            } else if (action.equals("requestOverlayPermission")) {
+                this.requestOverlayPermission();
             } else if (action.equals("emit")) {
                 this.emit(args);
             } else if (action.equals("disconnect")) {
@@ -88,17 +113,55 @@ public class SocketIOPlugin extends CordovaPlugin {
         sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
     }
 
-    private void connect(final JSONArray args) throws JSONException {
-        JSONObject options = args.getJSONObject(0);
-        String name = options.getString("name");
-        String url = options.getString("url");
-        String query = options.getString("query");
+    private void hasOverlayPermission() {
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                SocketIOService.connect(name, url, query);
+                try {
+                    Boolean hasPermission = false;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        hasPermission = Settings.canDrawOverlays(mApplicationContext);
+                    }
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("hasPermission", hasPermission);
+                    Log.i(TAG, "hasoverlayPermission: " + hasPermission);
+                    mCallbackContext.success(jsonObject);
+                } catch (JSONException e) {
+                    mCallbackContext.error(e.toString());
+                }
             }
         });
+    }
+
+    private void requestOverlayPermission() {
+        CordovaPlugin instance = this;
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                mCallbackContext.success();
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + mApplicationContext.getPackageName()));
+                cordova.startActivityForResult(instance, intent, OVERLAY_REQUEST_CODE);
+            }
+        });
+    }
+
+
+    private void connect(final JSONArray args) {
+        try {
+            JSONObject options = args.getJSONObject(0);
+            String name = options.getString("name");
+            String url = options.getString("url");
+            String token = options.getString("token");
+            cordova.getThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    SocketIOService.connect(name, url, token);
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+            mCallbackContext.error(e.toString());
+        }
     }
 
     private void addListener(final JSONArray args) throws JSONException {

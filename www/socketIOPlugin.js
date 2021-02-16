@@ -2,7 +2,7 @@ var argscheck = require("cordova/argscheck");
 var exec = require("cordova/exec");
 const PLUGIN_NAME = "SocketIOPlugin";
 
-function socketIOPlugin() { }
+function socketIOPlugin() {}
 
 socketIOPlugin.prototype.connect = (options) =>
   new Promise((resolve, reject) => {
@@ -34,9 +34,18 @@ socketIOPlugin.prototype.emit = (options) =>
     exec(resolve, reject, PLUGIN_NAME, "emit", [options]);
   });
 
-socketIOPlugin.prototype.onMessage = (successCallback,errorCallback) => {
+socketIOPlugin.prototype.hasOverlayPermission = () =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "hasOverlayPermission", []);
+  });
+
+socketIOPlugin.prototype.requestOverlayPermission = () =>
+  new Promise((resolve, reject) => {
+    exec(resolve, reject, PLUGIN_NAME, "requestOverlayPermission", []);
+  });
+
+socketIOPlugin.prototype.onMessage = (successCallback, errorCallback) => {
   exec(successCallback, errorCallback, PLUGIN_NAME, "onMessage", []);
 };
 
 module.exports = new socketIOPlugin();
-

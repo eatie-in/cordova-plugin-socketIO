@@ -18,6 +18,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -66,9 +67,8 @@ public class SocketIOService extends Service {
         PendingIntent restartServicePI = PendingIntent.getService(
                 getApplicationContext(), 1, restartService,
                 PendingIntent.FLAG_ONE_SHOT);
-        start();
-//        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
-//        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePI);
+        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePI);
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -78,15 +78,6 @@ public class SocketIOService extends Service {
         return START_STICKY_COMPATIBILITY;
     }
 
-
-    private static void showAlert(String alertMessage) {
-        Context context = SocketIOPlugin.mApplicationContext;
-        Intent alertIntent;
-        alertIntent = new Intent(context, AlertActivity.class);
-        alertIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        alertIntent.putExtra("alertMessage", alertMessage);
-        context.startActivity(alertIntent);
-    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -133,38 +124,10 @@ public class SocketIOService extends Service {
         managerCompat.notify(2, notification);
     }
 
-    private static boolean isMainAppForeground() {
-        boolean isMainAppForeground = false;
-        Context context = SocketIOPlugin.mApplicationContext;
-        Activity activity = SocketIOPlugin.mActivity;
-        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-
-        boolean isPhoneLocked = km.inKeyguardRestrictedInputMode();
-        boolean isSceenAwake = (Build.VERSION.SDK_INT < 20 ? pm.isScreenOn() : pm.isInteractive());
-
-        List<ActivityManager.RunningAppProcessInfo> runningProcessInfo = activityManager.getRunningAppProcesses();
-        if (runningProcessInfo != null && AlertActivity.isAlertShown == 0) {
-            for (ActivityManager.RunningAppProcessInfo appProcess : runningProcessInfo) {
-                Log.d("NotificationService", String.valueOf(appProcess.importance));
-                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-                        && appProcess.processName.equals(activity.getApplication().getPackageName())
-                        && !isPhoneLocked && isSceenAwake) {
-                    isMainAppForeground = true;
-                    break;
-                }
-            }
-        }
-        return isMainAppForeground;
-    }
-
 
     public static void updateStatus(String status) {
         updateNotification(status);
         connectionStatus = status;
-        SocketIOPlugin.onData(status);
-//        Log.i(TAG, "updateStatus: " + status);
     }
 
     public static void getUndelivered() {
@@ -178,29 +141,6 @@ public class SocketIOService extends Service {
         }
     }
 
-
-    public static void sendMessage(JSONObject message, Boolean showAlert) {
-        if (!isMainAppForeground()) {
-            mUndeliveredMessages.add(message);
-            Log.i(TAG, "sendMessage: " + "saved to undelivered");
-            if (showAlert) {
-                showAlert("Test");
-            }
-        } else {
-            SocketIOPlugin.onData(message);
-        }
-
-    }
-
-    public static void sendMessage(String message, Boolean showAlert) {
-        if (!isMainAppForeground()) {
-            if (showAlert) {
-                showAlert("Test");
-            }
-        } else {
-            SocketIOPlugin.onData(message);
-        }
-    }
 
     private static void start() {
         Context context = SocketIOPlugin.mApplicationContext;
@@ -227,7 +167,7 @@ public class SocketIOService extends Service {
         ArrayList<String> defaultListeners = new ArrayList<>();
         defaultListeners.add("connect");
         defaultListeners.add("disconnect");
-        defaultListeners.add("error");
+        defaultListeners.add("connect_error");
         socketListeners.put(name, defaultListeners);
     }
 
@@ -323,7 +263,82 @@ public class SocketIOService extends Service {
             SocketIO connection = entry.getValue();
             connection.disconnect();
         }
-//        SocketIOPlugin.mCallbackContext.success("disconnected");
+        SocketIOPlugin.mCallbackContext.success();
         stop();
+    }
+
+
+    public static void sendMessage(JSONObject message, Boolean showAlert) {
+        if (!isMainAppForeground()) {
+            mUndeliveredMessages.add(message);
+            Log.i(TAG, "sendMessage: " + "saved to undelivered");
+            if (showAlert) {
+                showAlert("Test");
+            }
+        } else {
+            SocketIOPlugin.onData(message);
+        }
+
+    }
+
+    public static void sendMessage(String message, Boolean showAlert) {
+        if (!isMainAppForeground()) {
+            if (showAlert) {
+                showAlert("Test");
+            }
+        } else {
+            SocketIOPlugin.onData(message);
+        }
+    }
+
+    public static void sendMessage(JSONObject payload) {
+        if (isMainAppForeground()) {
+            SocketIOPlugin.onData(payload);
+        }
+    }
+
+    public static void sendMessage(String payload) {
+        if (!isMainAppForeground()) {
+            SocketIOPlugin.onData(payload);
+        }
+    }
+
+    private static void showAlert(String alertMessage) {
+        if (AlertActivity.isAlertShown > 0) {
+            Log.i(TAG, "showAlert: " + "alert active");
+            return;
+        }
+        Context context = SocketIOPlugin.mApplicationContext;
+        Intent alertIntent;
+        alertIntent = new Intent(context, AlertActivity.class);
+        alertIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        alertIntent.putExtra("alertMessage", alertMessage);
+        context.startActivity(alertIntent);
+    }
+
+    private static boolean isMainAppForeground() {
+        boolean isMainAppForeground = false;
+        Context context = SocketIOPlugin.mApplicationContext;
+        Activity activity = SocketIOPlugin.mActivity;
+        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+
+        boolean isPhoneLocked = km.inKeyguardRestrictedInputMode();
+        boolean isSceenAwake = (Build.VERSION.SDK_INT < 20 ? pm.isScreenOn() : pm.isInteractive());
+
+        List<ActivityManager.RunningAppProcessInfo> runningProcessInfo = activityManager.getRunningAppProcesses();
+        if (runningProcessInfo != null && AlertActivity.isAlertShown == 0) {
+            for (ActivityManager.RunningAppProcessInfo appProcess : runningProcessInfo) {
+                Log.d("NotificationService", String.valueOf(appProcess.importance));
+                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                        && appProcess.processName.equals(activity.getApplication().getPackageName())
+                        && !isPhoneLocked && isSceenAwake) {
+                    isMainAppForeground = true;
+                    break;
+                }
+            }
+        }
+        return isMainAppForeground;
     }
 }

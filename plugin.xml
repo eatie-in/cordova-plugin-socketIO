@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
-    xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-socketIO" version="2.0.4-dev">
+    xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-socketIO" version="0.0.1">
     <name>SocketIO</name>
     <description>Cordova SoceketIO Plugin</description>
     <license>Apache 2.0</license>
     <keywords>cordova,SocketIO</keywords>
-    <!-- <repo>https://git-wip-us.apache.org/repos/asf/cordova-plugin-device.git</repo>
-    <issue>https://issues.apache.org/jira/browse/CB/component/12320648</issue> -->
-
     <js-module src="www/socketIOPlugin.js" name="socketIOPlugin">
         <clobbers target="cordova.plugins.socketIO" />
     </js-module>
@@ -16,10 +13,11 @@
     <platform name="android">
 
         <config-file target="AndroidManifest.xml" parent="/*">
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.VIBRATE"/>
-            <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+        <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+        <uses-permission android:name="android.permission.INTERNET" />
+	    <uses-permission android:name="android.permission.VIBRATE"/>
+	    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" /> 
+        <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
@@ -32,7 +30,6 @@
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="SocketIOPlugin">
                 <param name="android-package" value="com.vishnu.socketio.SocketIOPlugin"/>
-                <param name="onload" value="true" />
             </feature>
         </config-file>
         <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
@@ -41,6 +38,7 @@
         <source-file src="src/android/SocketIO.java" target-dir="src/com/vishnu/socketio/" />
         <source-file src="src/android/AlertActivity.java" target-dir="src/com/vishnu/socketio" />
         <source-file src="src/android/layout/activity_alert.xml" target-dir="res/layout"/>
+        <source-file src="src/android/layout/custom_alert.xml" target-dir="res/layout"/>
     </platform>
 
 </plugin>

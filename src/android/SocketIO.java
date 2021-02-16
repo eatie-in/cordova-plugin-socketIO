@@ -7,9 +7,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URI;
+import java.util.Collections;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import io.socket.client.SocketOptionBuilder;
 import io.socket.emitter.Emitter;
 
 
@@ -31,12 +33,13 @@ class SocketIO {
         return name;
     }
 
-    private IO.Options getOptions(String query) {
-        IO.Options options = new IO.Options();
-        options.query = query;
-        options.forceNew = true;
-        options.reconnection = true;
-        return options;
+    private IO.Options getOptions(String token) {
+        SocketOptionBuilder builder = IO.Options.builder();
+        builder.setAuth(Collections.singletonMap("token", token));
+        builder.setTimeout(10000);
+        builder.setReconnection(true);
+        builder.setForceNew(true);
+        return builder.build();
     }
 
     public void connect() {
@@ -67,12 +70,19 @@ class SocketIO {
         return payload;
     }
 
+    private JSONObject parseData(String event) throws JSONException {
+        JSONObject payload = new JSONObject();
+        payload.put("socket", name);
+        payload.put("event", event);
+        return payload;
+    }
+
     public void addListener(String event, Boolean showAlert) {
         socket.on(event, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
                 try {
-                    Log.i(TAG, "call: "+ args[0].toString());
+                    Log.i(TAG, "call: " + args[0].toString());
                     JSONObject payload = parseData(args[0], event);
                     SocketIOService.sendMessage(payload, showAlert);
                 } catch (JSONException e) {
@@ -91,13 +101,21 @@ class SocketIO {
         this.socket.emit(event, data);
     }
 
+
     private void onError() {
-        this.socket.on(Socket.EVENT_ERROR, new Emitter.Listener() {
+        this.socket.on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                String error = args[0].toString();
-                Log.i(TAG, error);
-                SocketIOService.updateStatus(error);
+                if (args.length > 0) {
+                    try {
+                        JSONObject status = parseData(args[0].toString(), Socket.EVENT_CONNECT_ERROR);
+                        SocketIOService.sendMessage(status);
+                        SocketIOService.updateStatus("Connecting...");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        SocketIOService.sendMessage(e.getMessage());
+                    }
+                }
             }
         });
     }
@@ -106,7 +124,14 @@ class SocketIO {
         this.socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                SocketIOService.updateStatus("connected");
+                try {
+                    JSONObject status = parseData(Socket.EVENT_CONNECT);
+                    SocketIOService.sendMessage(status);
+                    SocketIOService.updateStatus("Connected");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    SocketIOService.sendMessage(e.getMessage());
+                }
             }
         });
     }
@@ -115,7 +140,14 @@ class SocketIO {
         this.socket.on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                SocketIOService.updateStatus("Disconnected");
+                try {
+                    JSONObject status = parseData(Socket.EVENT_DISCONNECT);
+                    SocketIOService.sendMessage(status);
+                    SocketIOService.updateStatus("Disconnected");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    SocketIOService.sendMessage(e.getMessage());
+                }
             }
         });
     }
