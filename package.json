@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Cordova SocketIO Plugin",
   "cordova": {
-    "id": "cordova-plugin-socketIO",
+    "id": "cordova-plugin-socketio",
     "platforms": [
       "android"
     ]
