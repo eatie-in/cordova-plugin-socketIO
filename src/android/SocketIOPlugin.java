@@ -100,12 +100,34 @@ public class SocketIOPlugin extends CordovaPlugin {
                 this.addListener(args);
             } else if (action.equals("removeListener")) {
                 this.removeListener(args);
-            } else {
+            }else if(action.equals("getStatus")){
+                this.getStatus(args)
+            } 
+            else {
                 callbackContext.error("invalid");
                 return false;
             }
         }
         return true;
+    }
+
+    private void getStatus(final JSONArray args){
+        try {
+            String socketName = args.getJSONObject(0);
+            if(socketName == null){
+            mCallbackContext.error("socket name is required");
+                return
+            }
+            cordova.getThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    SocketIOService.getStatus(socketName)
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+            mCallbackContext.error(e.toString());
+        }
     }
 
     private void onSocketMessage() {

@@ -267,6 +267,17 @@ public class SocketIOService extends Service {
         stop();
     }
 
+    public static void getStatus(String socketName){
+        CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
+        String socketName = name.toLowerCase();
+        SocketIO socketConnection = socketConnections.get(name.toLowerCase());
+        if (socketConnection == null) {
+            callbackContext.success("false");
+            return;
+        }
+        callbackContext.success("true")
+    }
+
 
     public static void sendMessage(JSONObject message, Boolean showAlert) {
         if (!isMainAppForeground()) {

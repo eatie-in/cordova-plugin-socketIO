@@ -1,34 +1,16 @@
 {
-  "name": "cordova-plugin-device",
-  "version": "2.0.4-dev",
-  "description": "Cordova Device Plugin",
-  "types": "./types/index.d.ts",
+  "name": "cordova-plugin-socketio",
+  "version": "0.0.1",
+  "description": "Cordova SocketIO Plugin",
   "cordova": {
-    "id": "cordova-plugin-device",
+    "id": "cordova-plugin-socketIO",
     "platforms": [
-      "android",
-      "ios",
-      "windows",
-      "browser",
-      "osx"
+      "android"
     ]
   },
-  "repository": "github:apache/cordova-plugin-device",
-  "bugs": "https://github.com/apache/cordova-plugin-device/issues",
   "keywords": [
-    "cordova",
-    "device",
-    "ecosystem:cordova",
-    "cordova-android",
-    "cordova-ios",
-    "cordova-windows",
-    "cordova-browser",
-    "cordova-osx"
+    "cordova"
   ],
-  "scripts": {
-    "test": "npm run lint",
-    "lint": "eslint ."
-  },
   "author": "Apache Software Foundation",
   "license": "Apache-2.0",
   "engines": {
@@ -37,8 +19,5 @@
         "cordova": ">100"
       }
     }
-  },
-  "devDependencies": {
-    "@cordova/eslint-config": "^3.0.0"
   }
 }
