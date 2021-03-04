@@ -101,9 +101,8 @@ public class SocketIOPlugin extends CordovaPlugin {
             } else if (action.equals("removeListener")) {
                 this.removeListener(args);
             }else if(action.equals("getStatus")){
-                this.getStatus(args)
-            } 
-            else {
+                this.getStatus(args);
+            } else {
                 callbackContext.error("invalid");
                 return false;
             }
@@ -113,15 +112,15 @@ public class SocketIOPlugin extends CordovaPlugin {
 
     private void getStatus(final JSONArray args){
         try {
-            String socketName = args.getJSONObject(0);
+            String socketName = args.getString(0);
             if(socketName == null){
             mCallbackContext.error("socket name is required");
-                return
+                return;
             }
             cordova.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
-                    SocketIOService.getStatus(socketName)
+                    SocketIOService.getStatus(socketName);
                 }
             });
         } catch (JSONException e) {

@@ -267,7 +267,7 @@ public class SocketIOService extends Service {
         stop();
     }
 
-    public static void getStatus(String socketName){
+    public static void getStatus(String name){
         CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
         String socketName = name.toLowerCase();
         SocketIO socketConnection = socketConnections.get(name.toLowerCase());
@@ -275,7 +275,7 @@ public class SocketIOService extends Service {
             callbackContext.success("false");
             return;
         }
-        callbackContext.success("true")
+        callbackContext.success("true");
     }
 
 
