@@ -102,7 +102,7 @@ public class SocketIOService extends Service {
         PackageManager pm = context.getPackageManager();
         Intent notificationIntent = pm.getLaunchIntentForPackage(context.getPackageName());
         NotificationCompat.Builder notification = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setContentTitle("Connection")
+                .setContentTitle("App is running")
                 .setContentText(text)
                 .setOnlyAlertOnce(true)
                 .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT));

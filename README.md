@@ -5,9 +5,11 @@
 NOTE: Required Socket.io v3 server
 
 ## Default events
-   ``` 
-   connect,disconnect,connect_error 
-   ```
+
+```
+connect,disconnect,connect_error
+```
+
 ## Methods
 
 ### onMessage(_callback_)
@@ -52,7 +54,9 @@ await cordova.plugins.socketio.disconnect();
 
 ### addListener(_type_)
 
-Add the listener. For alert please make sure overlay permissions are granted on android 10
+Add the listener. For alert please make sure overlay permissions are granted on android 10. To play custom sound place the audio in `platforms/android/app/src/main/res/drawable`
+
+When alert option is true show the alert with vibration and sound
 
 ```js
 await cordova.plugins.socketio.addListener({
