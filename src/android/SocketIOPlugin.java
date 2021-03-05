@@ -56,12 +56,6 @@ public class SocketIOPlugin extends CordovaPlugin {
         mCallbackContext = null;
         super.onDestroy();
     }
-//
-//    @Override
-//    public Bundle onSaveInstanceState() {
-//        return super.onSaveInstanceState();
-//    }
-
 
     @Override
     public void onReset() {

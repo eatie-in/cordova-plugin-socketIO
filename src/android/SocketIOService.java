@@ -57,23 +57,6 @@ public class SocketIOService extends Service {
     }
 
     @Override
-    public void onDestroy() {
-//        super.onDestroy();
-
-        if (socketConnections.size() < 1) {
-            return;
-        }
-        Log.d("NotificationService", "onDestroy METHOD");
-        Intent restartService = new Intent(getApplicationContext(), this.getClass());
-        restartService.setPackage(getPackageName());
-        PendingIntent restartServicePI = PendingIntent.getService(
-                getApplicationContext(), 1, restartService,
-                PendingIntent.FLAG_ONE_SHOT);
-        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
-        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePI);
-    }
-
-    @Override
     public void onTaskRemoved(Intent rootIntent) {
         if (socketConnections.size() < 1) {
             return;
@@ -292,7 +275,8 @@ public class SocketIOService extends Service {
             callbackContext.success("false");
             return;
         }
-        callbackContext.success("true");
+        String status = socketConnection.socket.connected().toString()
+        callbackContext.success(status);
     }
 
 
