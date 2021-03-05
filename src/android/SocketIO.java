@@ -33,6 +33,10 @@ class SocketIO {
         return name;
     }
 
+    public Boolean isConnected(){
+      return socket.connected();
+    }
+
     private IO.Options getOptions(String token) {
         SocketOptionBuilder builder = IO.Options.builder();
         builder.setAuth(Collections.singletonMap("token", token));

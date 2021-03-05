@@ -275,7 +275,7 @@ public class SocketIOService extends Service {
             callbackContext.success("false");
             return;
         }
-        String status = socketConnection.socket.connected().toString();
+        String status = socketConnection.isConnected().toString();
         callbackContext.success(status);
     }
 
