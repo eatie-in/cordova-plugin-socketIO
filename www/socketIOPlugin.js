@@ -2,11 +2,10 @@ var exec = require("cordova/exec");
 const PLUGIN_NAME = "SocketIOPlugin";
 
 module.exports = {
-  connect: (options) => {
+  connect: (options) => 
     new Promise((resolve, reject) => {
       exec(resolve, reject, PLUGIN_NAME, "connect", [options]);
-    });
-  },
+    }),
   disconnect: (socket) =>
     new Promise((resolve, reject) => {
       exec(resolve, reject, PLUGIN_NAME, "disconnect", [socket]);
