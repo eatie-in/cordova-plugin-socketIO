@@ -45,4 +45,26 @@ module.exports = {
     new Promise((resolve, reject) => {
       exec(resolve, reject, PLUGIN_NAME, "getStatus", [socketName]);
     }),
+
+  openBatterySettings: () => {
+    return new Promise((resolve, reject) => {
+      exec(resolve, reject, PLUGIN_NAME, "openBatterySettings");
+    });
+  },
+  isIgnoringBatteryOptimizations: () => {
+    return new Promise((resolve, reject) => {
+      exec(resolve, reject, PLUGIN_NAME, "isIgnoringBatteryOptimizations");
+    });
+  },
+  openAppStart: () => {
+    return new Promise((resolve, reject) => {
+      exec(resolve, reject, PLUGIN_NAME, "openAppStart");
+    });
+  },
+
+  requestTopPermissions: () => {
+    return new Promise((resolve, reject) => {
+      exec(resolve, reject, PLUGIN_NAME, "requestTopPermissions");
+    });
+  },
 };

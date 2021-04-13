@@ -111,4 +111,25 @@ Get the connection status of socket
 
 ```js
 await cordova.plugins.socketio.getStatus(socket);
+// returns boolean
+```
+
+### openBatterySettings
+```js
+await cordova.plugins.socketio.getStatus();
+```
+
+### requestTopPermissions
+```js
+await cordova.plugins.socketio.requestTopPermissions();
+```
+
+### isIgnoringBatteryOptimizations
+```js
+await cordova.plugins.socketio.isIgnoringBatteryOptimizations();
+```
+### openAppStart
+opens app auto start settings
+```js
+await cordova.plugins.socketio.openAppStart();
 ```
