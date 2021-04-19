@@ -116,7 +116,7 @@ await cordova.plugins.socketio.getStatus(socket);
 
 ### openBatterySettings
 ```js
-await cordova.plugins.socketio.getStatus();
+await cordova.plugins.socketio.openBatterySettings();
 ```
 
 ### requestTopPermissions
