@@ -21,11 +21,13 @@ class SocketIO {
     private String url;
     private String query;
     private Socket socket;
+    private String path;
 
-    SocketIO(String name, String url, String query) {
+    SocketIO(String name, String url, String query,String path) {
         this.name = name;
         this.url = url;
         this.query = query;
+        this.path = path;
         this.connect();
     }
 
@@ -43,6 +45,7 @@ class SocketIO {
         builder.setTimeout(10000);
         builder.setReconnection(true);
         builder.setForceNew(true);
+        builder.setPath(path);
         return builder.build();
     }
 
@@ -118,6 +121,7 @@ class SocketIO {
                     } catch (JSONException e) {
                         e.printStackTrace();
                         SocketIOService.sendMessage(e.getMessage());
+                        Log.i(TAG,"onError" + e.getMessage());
                     }
                 }
             }
@@ -132,9 +136,11 @@ class SocketIO {
                     JSONObject status = parseData(Socket.EVENT_CONNECT);
                     SocketIOService.sendMessage(status);
                     SocketIOService.updateStatus("Connected");
+                    Log.i(TAG,"connected");
                 } catch (JSONException e) {
                     e.printStackTrace();
                     SocketIOService.sendMessage(e.getMessage());
+                    Log.e(TAG,"onConnect" + e.getMessage());
                 }
             }
         });
@@ -148,9 +154,11 @@ class SocketIO {
                     JSONObject status = parseData(Socket.EVENT_DISCONNECT);
                     SocketIOService.sendMessage(status);
                     SocketIOService.updateStatus("Disconnected");
+                    Log.i(TAG,"onDisconnect:"+ "disconnected");
                 } catch (JSONException e) {
                     e.printStackTrace();
                     SocketIOService.sendMessage(e.getMessage());
+                    Log.e(TAG,"onDisconnect" + e.getMessage());
                 }
             }
         });

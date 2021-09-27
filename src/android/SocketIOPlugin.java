@@ -154,10 +154,11 @@ public class SocketIOPlugin extends CordovaPlugin {
             String name = options.getString("name");
             String url = options.getString("url");
             String token = options.getString("token");
+            String path = options.has("path")? options.getString("path"):"/socket.io";
             cordova.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
-                    SocketIOService.connect(name, url, token);
+                    SocketIOService.connect(name, url, token,path);
                 }
             });
         } catch (JSONException e) {

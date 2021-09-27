@@ -171,7 +171,7 @@ public class SocketIOService extends Service {
         socketListeners.put(name, defaultListeners);
     }
 
-    public static void connect(String name, String url, String query) {
+    public static void connect(String name, String url, String query,String path) {
         CallbackContext callbackContext = SocketIOPlugin.mCallbackContext;
         String socketName = name.toLowerCase();
         SocketIO socketConnection = socketConnections.get(name.toLowerCase());
@@ -180,7 +180,7 @@ public class SocketIOService extends Service {
             callbackContext.success(error);
             return;
         }
-        SocketIO socketIO = new SocketIO(name, url, query);
+        SocketIO socketIO = new SocketIO(name, url, query,path);
         socketConnections.put(socketName, socketIO);
         addDefaultListeners(socketName);
         callbackContext.success();
