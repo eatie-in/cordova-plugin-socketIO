@@ -19,7 +19,9 @@
 package com.vishnu.socketio;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -57,9 +59,11 @@ public class SocketIOPlugin extends CordovaPlugin {
     protected static final String TAG = "SocketIoPlugin";
     public static Activity mActivity;
     public static Context mApplicationContext;
+    public static CordovaInterface mCordova;
     protected static CallbackContext mCallbackContext;
     private static CallbackContext mMessageCallbackContext;
     private static final int OVERLAY_REQUEST_CODE = 5;
+    public static Utils utils;
 
     @Override
     public void onDestroy() {
@@ -76,12 +80,18 @@ public class SocketIOPlugin extends CordovaPlugin {
     }
 
     @Override
-    protected void pluginInitialize() {
-        Log.i(TAG, "pluginInitialize:");
+    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+        super.initialize(cordova, webView);
+        mCordova = cordova;
         mActivity = cordova.getActivity();
         mApplicationContext = mActivity.getApplicationContext();
-        super.pluginInitialize();
+        utils = new Utils(mApplicationContext,mActivity);
+        Log.i(TAG, "initialize: ");
+
+        // reset this as activity and context are available
+        Utils.isAlertActive = false;
     }
+
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         if (action.equals("onMessage")) {
@@ -93,22 +103,18 @@ public class SocketIOPlugin extends CordovaPlugin {
                 this.connect(args);
             } else if (action.equals("hasOverlayPermission")) {
                 this.hasOverlayPermission();
-            } else if (action.equals("requestOverlayPermission")) {
-                this.requestOverlayPermission();
             } else if (action.equals("emit")) {
                 this.emit(args);
             } else if (action.equals("disconnect")) {
-                this.disconnect(args);
-            } else if (action.equals("disconnectAll")) {
-                this.disconnectAll();
+                this.disconnect();
             } else if (action.equals("addListener")) {
                 this.addListener(args);
             } else if (action.equals("removeListener")) {
                 this.removeListener(args);
             } else if (action.equals("getStatus")) {
-                this.getStatus(args);
-            } else if (action.equals("requestTopPermissions")) {
-                this.requestTopPermissions();
+                this.getStatus();
+            } else if (action.equals("requestOverlayPermission")) {
+                this.requestOverlayPermission();
             } else if (action.equals("isIgnoringBatteryOptimizations")) {
                 this.isIgnoringBatteryOptimizations();
             } else if (action.equals("openBatterySettings")) {
@@ -123,42 +129,33 @@ public class SocketIOPlugin extends CordovaPlugin {
         return true;
     }
 
-    private void getStatus(final JSONArray args) {
-        try {
-            String socketName = args.getString(0);
-            if (socketName == null) {
-                mCallbackContext.error("socket name is required");
-                return;
+    private void getStatus() {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                SocketIOService.getStatus();
             }
-            cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    SocketIOService.getStatus(socketName);
-                }
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-            mCallbackContext.error(e.toString());
-        }
+        });
     }
 
     private void onSocketMessage() {
         SocketIOService.getUndelivered();
-        sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        sendPluginResultAndKeepCallback(pluginResult,mMessageCallbackContext);
+        //sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
     }
 
 
     private void connect(final JSONArray args) {
         try {
             JSONObject options = args.getJSONObject(0);
-            String name = options.getString("name");
             String url = options.getString("url");
             String token = options.getString("token");
-            String path = options.has("path")? options.getString("path"):"/socket.io";
+            String path = options.getString("path");
             cordova.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
-                    SocketIOService.connect(name, url, token,path);
+                    SocketIOService.connect(url, token, path);
                 }
             });
         } catch (JSONException e) {
@@ -169,61 +166,49 @@ public class SocketIOPlugin extends CordovaPlugin {
 
     private void addListener(final JSONArray args) throws JSONException {
         JSONObject options = args.getJSONObject(0);
-        String socketName = options.getString("name");
         String eventName = options.getString("event");
-        Boolean showAlert = options.has("alert") && options.getBoolean("alert");
+        Boolean showAlert = options.getBoolean( "alert");
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                SocketIOService.addListener(socketName, eventName, showAlert);
+                SocketIOService.addListener(eventName, showAlert);
             }
         });
     }
 
     private void removeListener(final JSONArray args) throws JSONException {
         JSONObject options = args.getJSONObject(0);
-        String socketName = options.getString("name");
         String eventName = options.getString("event");
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                SocketIOService.removeListener(socketName, eventName);
+                SocketIOService.removeListener(eventName);
             }
         });
     }
 
     private void emit(JSONArray args) throws JSONException {
         JSONObject options = args.getJSONObject(0);
-        String socketName = options.getString("name");
         String eventName = options.getString("event");
-        Object payload = options.getJSONObject("data");
-        Log.i(TAG, "emit: name:" + socketName + "event: " + eventName);
+        JSONObject payload = options.getJSONObject("data");
+        Log.i(TAG, "emit:"  + "event: " + eventName);
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                SocketIOService.emit(socketName, eventName, payload);
+                SocketIOService.emit(eventName, payload);
             }
         });
     }
 
-    private void disconnect(JSONArray args) throws JSONException {
-        String name = args.getString(0);
+    private void disconnect(){
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                SocketIOService.disconnect(name);
+                SocketIOService.disconnect();
             }
         });
     }
 
-    private void disconnectAll() {
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                SocketIOService.disconnectAll();
-            }
-        });
-    }
 
     public static void onData(Object payload) {
         if (mMessageCallbackContext == null) {
@@ -275,18 +260,6 @@ public class SocketIOPlugin extends CordovaPlugin {
     }
 
     private void requestOverlayPermission() {
-        CordovaPlugin instance = this;
-        cordova.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                mCallbackContext.success();
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + mApplicationContext.getPackageName()));
-                cordova.startActivityForResult(instance, intent, OVERLAY_REQUEST_CODE);
-            }
-        });
-    }
-
-    private void requestTopPermissions() {
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {

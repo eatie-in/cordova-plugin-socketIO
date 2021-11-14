@@ -31,14 +31,17 @@ public class AlertActivity extends Activity {
     private Vibrator mVibrator;
     private Ringtone mRingtone;
 
+    private Utils utils;
+
     public void onCreate(Bundle state) {
         super.onCreate(state);
         mContext = getApplicationContext();
+        utils = new Utils(mContext,this);
         mPackageName = mContext.getPackageName();
         setLayoutParams();
-        getServices();
         setContentView(getLayout());
-        showAlert();
+        isAlertShown++;
+        utils.showAlert(true);
     }
 
     public void setLayoutParams() {
@@ -51,69 +54,6 @@ public class AlertActivity extends Activity {
         int layout = mContext.getResources().getIdentifier(mLayoutName, "layout", mPackageName);
         return layout;
     }
-
-
-    private void vibrate(long seconds) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mVibrator.vibrate(VibrationEffect.createOneShot(seconds, VibrationEffect.DEFAULT_AMPLITUDE));
-        } else {
-            mVibrator.vibrate(seconds);
-        }
-    }
-
-
-    private AlertDialog.Builder createAlert() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("You have new order");
-        builder.setMessage("Tap ok to view the order");
-        builder.setCancelable(false);
-        builder.setIcon(mContext.getResources().getIdentifier("ic_launcher","mipmap",mPackageName));
-        builder.setPositiveButton("OK",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,
-                                        int which) {
-                        mVibrator.cancel();
-                        mRingtone.stop();
-                        launchApp();
-                    }
-                });
-
-        return builder;
-    }
-
-
-    private void launchApp() {
-        PackageManager pm = getPackageManager();
-        Intent notificationIntent = pm.getLaunchIntentForPackage(mPackageName);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(notificationIntent);
-    }
-
-    private void showAlert() {
-        AlertDialog.Builder alert = createAlert();
-        isAlertShown++;
-        vibrate(5000);
-        mRingtone.play();
-        alert.show();
-    }
-
-    private void getServices() {
-        mVibrator = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
-        getSound();
-    }
-
-    private void getSound() {
-        int checkExistence = mContext.getResources().getIdentifier("audio", "raw", mPackageName);
-        if (checkExistence != 0) {
-            Uri soundPath = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/" + mAudioName);
-            mRingtone = RingtoneManager.getRingtone(this, soundPath);
-        } else {
-            // ringtone
-            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-            mRingtone = RingtoneManager.getRingtone(this, notification);
-        }
-    }
-
 
     public void onDestroy() {
         isAlertShown--;
