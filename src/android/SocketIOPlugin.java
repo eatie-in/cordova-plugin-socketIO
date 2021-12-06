@@ -142,7 +142,6 @@ public class SocketIOPlugin extends CordovaPlugin {
         SocketIOService.getUndelivered();
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
         sendPluginResultAndKeepCallback(pluginResult,mMessageCallbackContext);
-        //sendPluginResultAndKeepCallback("ok", mMessageCallbackContext);
     }
 
 

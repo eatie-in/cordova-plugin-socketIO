@@ -49,12 +49,9 @@ public class SocketIOService extends Service {
 
     private static ArrayList<JSONObject> mUndeliveredMessages = new ArrayList<JSONObject>();
 
-    //private static final Map<String, SocketIO> socketConnections = new HashMap<String, SocketIO>();
     private static final ArrayList<String> socketListeners = new ArrayList<String>();
 
     private static SocketIO mSocket;
-
-    //private static Utils utils = new Utils(SocketIOPlugin.mApplicationContext,SocketIOPlugin.mActivity);
 
     @Override
     public void onCreate() {
@@ -143,7 +140,6 @@ public class SocketIOService extends Service {
         if (mUndeliveredMessages.size() >= 1) {
             for (JSONObject message : mUndeliveredMessages) {
                 SocketIOPlugin.onData(message);
-//                mUndeliveredMessages.remove(message);
             }
             mUndeliveredMessages.clear();
         } else {
@@ -272,8 +268,8 @@ public class SocketIOService extends Service {
         try{
             String event = payload.getString("event");
             JSONObject data = null;
-            if(!payload.has("data") || Utils.isJSONValid(payload.getString("data"))){
-                Log.w(TAG, "sendAcknowledgement: " + "no ack: " + event);
+            if(!payload.has("data") || !Utils.isJSONValid(payload.getString("data"))){
+                Log.w(TAG, "sendAcknowledgement: " + "no ack: " + event );
                 return;
             }
             data = payload.getJSONObject("data");
@@ -330,19 +326,6 @@ public class SocketIOService extends Service {
             SocketIOPlugin.onData(payload);
         }
     }
-
-//    private static void showAlert() {
-//        if (AlertActivity.isAlertShown > 0) {
-//            Log.i(TAG, "showAlert: " + "alert active");
-//            return;
-//        }
-//        Context context = SocketIOPlugin.mApplicationContext;
-//        Intent alertIntent;
-//        alertIntent = new Intent(context, AlertActivity.class);
-//        alertIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//        //alertIntent.putExtra("alertMessage", alertMessage);
-//        context.startActivity(alertIntent);
-//    }
 
     private static boolean isMainAppForeground() {
         boolean isMainAppForeground = false;

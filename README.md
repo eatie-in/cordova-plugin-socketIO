@@ -25,10 +25,11 @@ cordova.plugins.socketio.onMessage(function (payload) {
 ### connect(_type_)
 
 Connect to server and start foreground service on android
+path(optional) if not passed uses default
 
 ```js
 await cordova.plugins.socketio.connect({
-  name: String,
+  path?: String,
   url: String,
   token: String, // for authentication,it cannot be null
 });
@@ -39,18 +40,9 @@ await cordova.plugins.socketio.connect({
 Terminates the connection of socket.
 
 ```js
-await cordova.plugins.socketio.disconnect({
-  name: String, // name of socket
-});
-```
-
-### disconnectAll(_type_)
-
-Terminates All sockets connections and stops foreground service
-
-```js
 await cordova.plugins.socketio.disconnect();
 ```
+
 
 ### addListener(_type_)
 
@@ -60,9 +52,8 @@ When alert option is true show the alert with vibration and sound
 
 ```js
 await cordova.plugins.socketio.addListener({
-  name: String, // name of socket
   event: String,
-  alert: Boolean, // show the alert when app is in background or removed from recent apps
+  alert: Boolean, // show the alert when app is in background or removed from recent apps or in foreground
 });
 ```
 
@@ -72,7 +63,6 @@ removes the listener
 
 ```js
 await cordova.plugins.socketio.removeListener({
-  name: String, // name of socket
   event: String,
 });
 ```
@@ -83,7 +73,6 @@ emits event
 
 ```js
 await cordova.plugins.socketio.emit({
-  name: String, // name of socket
   event: String,
   data: {}, // should be object
 });
@@ -119,10 +108,6 @@ await cordova.plugins.socketio.getStatus(socket);
 await cordova.plugins.socketio.openBatterySettings();
 ```
 
-### requestTopPermissions
-```js
-await cordova.plugins.socketio.requestTopPermissions();
-```
 
 ### isIgnoringBatteryOptimizations
 ```js
