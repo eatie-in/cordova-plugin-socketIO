@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
-    xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-socketio" version="0.0.1">
+    xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-socketio" version="0.0.2">
     <name>SocketIO</name>
     <description>Cordova SoceketIO Plugin</description>
     <license>Apache 2.0</license>
@@ -16,7 +16,7 @@
         <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
         <uses-permission android:name="android.permission.INTERNET" />
 	    <uses-permission android:name="android.permission.VIBRATE"/>
-	    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" /> 
+	    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" />
         <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
         </config-file>
 
