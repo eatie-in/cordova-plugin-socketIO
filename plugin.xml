@@ -36,6 +36,7 @@
         <source-file src="src/android/SocketIOPlugin.java" target-dir="src/com/vishnu/socketio/" />
         <source-file src="src/android/SocketIOService.java" target-dir="src/com/vishnu/socketio/" />
         <source-file src="src/android/SocketIO.java" target-dir="src/com/vishnu/socketio/" />
+        <source-file src="src/android/Utils.java" target-dir="src/com/vishnu/socketio/" />
         <source-file src="src/android/AlertActivity.java" target-dir="src/com/vishnu/socketio" />
         <source-file src="src/android/layout/activity_alert.xml" target-dir="res/layout"/>
         <source-file src="src/android/layout/custom_alert.xml" target-dir="res/layout"/>

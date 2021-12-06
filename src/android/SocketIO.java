@@ -17,23 +17,20 @@ import io.socket.emitter.Emitter;
 
 class SocketIO {
     private static String TAG = "SOCKET_IO_SERVICE";
-    private String name;
     private String url;
     private String query;
     private Socket socket;
     private String path;
 
-    SocketIO(String name, String url, String query,String path) {
-        this.name = name;
+    SocketIO(String url, String query,String path) {
+
         this.url = url;
         this.query = query;
         this.path = path;
         this.connect();
     }
 
-    public String getName() {
-        return name;
-    }
+
 
     public Boolean isConnected(){
       return socket.connected();
@@ -71,7 +68,6 @@ class SocketIO {
 
     private JSONObject parseData(Object arg, String event) throws JSONException {
         JSONObject payload = new JSONObject();
-        payload.put("socket", name);
         payload.put("event", event);
         payload.put("data", arg);
         return payload;
@@ -79,17 +75,17 @@ class SocketIO {
 
     private JSONObject parseData(String event) throws JSONException {
         JSONObject payload = new JSONObject();
-        payload.put("socket", name);
         payload.put("event", event);
         return payload;
     }
 
     public void addListener(String event, Boolean showAlert) {
+        Log.e(TAG, "addListener: "+ event + showAlert);
         socket.on(event, new Emitter.Listener() {
             @Override
             public void call(Object... args) {
                 try {
-                    Log.i(TAG, "call: " + args[0].toString());
+                    Log.i(TAG, "call: " + args[0].toString() + showAlert);
                     JSONObject payload = parseData(args[0], event);
                     SocketIOService.sendMessage(payload, showAlert);
                 } catch (JSONException e) {
@@ -104,7 +100,7 @@ class SocketIO {
         socket.off(event);
     }
 
-    public void emit(String event, Object data) {
+    public void emit(String event, JSONObject data) {
         this.socket.emit(event, data);
     }
 
