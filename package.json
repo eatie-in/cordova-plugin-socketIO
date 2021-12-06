@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-socketio",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Cordova SocketIO Plugin",
   "cordova": {
     "id": "cordova-plugin-socketio",
